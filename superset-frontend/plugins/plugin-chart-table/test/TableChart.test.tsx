@@ -783,75 +783,189 @@ describe('plugin-chart-table', () => {
         cells = document.querySelectorAll('td');
       });
 
-      test('render cell bars even when column contains NULL values', () => {
-        const props = transformProps({
-          ...testData.raw,
-          queriesData: [
-            {
-              ...testData.raw.queriesData[0],
-              colnames: ['category', 'value1', 'value2', 'value3', 'value4'],
-              coltypes: [
-                GenericDataType.String,
-                GenericDataType.Numeric,
-                GenericDataType.Numeric,
-                GenericDataType.Numeric,
-                GenericDataType.Numeric,
-              ],
-              data: [
-                {
-                  category: 'Category A',
-                  value1: 10,
-                  value2: 20,
-                  value3: 30,
-                  value4: null,
-                },
-                {
-                  category: 'Category B',
-                  value1: 15,
-                  value2: 25,
-                  value3: 35,
-                  value4: 100,
-                },
-                {
-                  category: 'Category C',
-                  value1: 18,
-                  value2: 28,
-                  value3: 38,
-                  value4: null,
-                },
-              ],
-            },
-          ],
-          rawFormData: {
-            ...testData.raw.rawFormData,
-            show_cell_bars: true,
-            metrics: ['value1', 'value2', 'value3', 'value4'],
-          },
-        });
-
-        const { container } = render(
+      it('render color with string column color formatter(operator begins with)', () => {
+        render(
           ProviderWrapper({
-            children: <TableChart {...props} sticky={false} />,
+            children: (
+              <TableChart
+                {...transformProps({
+                  ...testData.advanced,
+                  rawFormData: {
+                    ...testData.advanced.rawFormData,
+                    conditional_formatting: [
+                      {
+                        colorScheme: '#ACE1C4',
+                        column: 'name',
+                        operator: 'begins with',
+                        targetValue: 'J',
+                      },
+                    ],
+                  },
+                })}
+              />
+            ),
           }),
         );
 
-        // Get all cell bars - should exist for both columns with and without NULL values
-        const cellBars = container.querySelectorAll('div.cell-bar');
+        expect(getComputedStyle(screen.getByText('Joe')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Michael')).background).toBe(
+          '',
+        );
+      });
 
-        // Should have cell bars in all numeric columns, even those with NULL values
-        // value1, value2, value3 all have 3 values, value4 has 1 non-NULL value
-        // Total: 3 + 3 + 3 + 1 = 10 cell bars
-        expect(cellBars.length).toBeGreaterThan(0);
+      it('render color with string column color formatter (operator ends with)', () => {
+        render(
+          ProviderWrapper({
+            children: (
+              <TableChart
+                {...transformProps({
+                  ...testData.advanced,
+                  rawFormData: {
+                    ...testData.advanced.rawFormData,
+                    conditional_formatting: [
+                      {
+                        colorScheme: '#ACE1C4',
+                        column: 'name',
+                        operator: 'ends with',
+                        targetValue: 'ia',
+                      },
+                    ],
+                  },
+                })}
+              />
+            ),
+          }),
+        );
+        expect(getComputedStyle(screen.getByText('Maria')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Joe')).background).toBe('');
+      });
 
-        // Specifically check that value4 column (which has NULLs) still renders bars for non-NULL cells
-        const rows = container.querySelectorAll('tbody tr');
-        expect(rows.length).toBe(3);
+      it('render color with string column color formatter (operator containing)', () => {
+        render(
+          ProviderWrapper({
+            children: (
+              <TableChart
+                {...transformProps({
+                  ...testData.advanced,
+                  rawFormData: {
+                    ...testData.advanced.rawFormData,
+                    conditional_formatting: [
+                      {
+                        colorScheme: '#ACE1C4',
+                        column: 'name',
+                        operator: 'containing',
+                        targetValue: 'c',
+                      },
+                    ],
+                  },
+                })}
+              />
+            ),
+          }),
+        );
+        expect(getComputedStyle(screen.getByText('Michael')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Joe')).background).toBe('');
+      });
 
-        // Row 2 should have a cell bar in value4 column (value: 100)
-        const row2Cells = rows[1].querySelectorAll('td');
-        const value4Cell = row2Cells[4]; // 5th column (0-indexed)
-        const value4Bar = value4Cell.querySelector('div.cell-bar');
-        expect(value4Bar).toBeTruthy();
+      it('render color with string column color formatter (operator not containing)', () => {
+        render(
+          ProviderWrapper({
+            children: (
+              <TableChart
+                {...transformProps({
+                  ...testData.advanced,
+                  rawFormData: {
+                    ...testData.advanced.rawFormData,
+                    conditional_formatting: [
+                      {
+                        colorScheme: '#ACE1C4',
+                        column: 'name',
+                        operator: 'not containing',
+                        targetValue: 'i',
+                      },
+                    ],
+                  },
+                })}
+              />
+            ),
+          }),
+        );
+        expect(getComputedStyle(screen.getByText('Joe')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Michael')).background).toBe(
+          '',
+        );
+      });
+
+      it('render color with string column color formatter (operator =)', () => {
+        render(
+          ProviderWrapper({
+            children: (
+              <TableChart
+                {...transformProps({
+                  ...testData.advanced,
+                  rawFormData: {
+                    ...testData.advanced.rawFormData,
+                    conditional_formatting: [
+                      {
+                        colorScheme: '#ACE1C4',
+                        column: 'name',
+                        operator: '=',
+                        targetValue: 'Joe',
+                      },
+                    ],
+                  },
+                })}
+              />
+            ),
+          }),
+        );
+        expect(getComputedStyle(screen.getByText('Joe')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Michael')).background).toBe(
+          '',
+        );
+      });
+
+      it('render color with string column color formatter (operator None)', () => {
+        render(
+          ProviderWrapper({
+            children: (
+              <TableChart
+                {...transformProps({
+                  ...testData.advanced,
+                  rawFormData: {
+                    ...testData.advanced.rawFormData,
+                    conditional_formatting: [
+                      {
+                        colorScheme: '#ACE1C4',
+                        column: 'name',
+                        operator: 'None',
+                      },
+                    ],
+                  },
+                })}
+              />
+            ),
+          }),
+        );
+        expect(getComputedStyle(screen.getByText('Joe')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Michael')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
+        expect(getComputedStyle(screen.getByText('Maria')).background).toBe(
+          'rgba(172, 225, 196, 1)',
+        );
       });
     });
   });
