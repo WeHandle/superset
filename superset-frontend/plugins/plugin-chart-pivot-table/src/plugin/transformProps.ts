@@ -18,6 +18,7 @@
  */
 import {
   ChartProps,
+  DataRecordValue,
   DataRecord,
   extractTimegrain,
   getTimeFormatter,
@@ -40,6 +41,40 @@ function isNumeric(key: string, data: DataRecord[] = []) {
       typeof record[key] === 'number',
   );
 }
+
+const coerceNumericTemporalString = (
+  value: DataRecordValue,
+): DataRecordValue => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return value;
+  }
+
+  const numericValue = Number(trimmedValue);
+  return Number.isNaN(numericValue) ? value : numericValue;
+};
+
+const createSafeDateFormatter = (
+  formatter: DateFormatter,
+  shouldCoerceNumericString = false,
+): DateFormatter => {
+  const safeFormatter = (value: DataRecordValue): string => {
+    const formatterFn = formatter as (value: DataRecordValue) => string;
+    const valueToFormat = shouldCoerceNumericString
+      ? coerceNumericTemporalString(value)
+      : value;
+    const formattedValue = formatterFn(valueToFormat);
+    if (typeof formattedValue === 'string' && formattedValue.includes('NaN')) {
+      return String(value);
+    }
+    return formattedValue;
+  };
+  return safeFormatter;
+};
 
 export default function transformProps(chartProps: ChartProps<QueryFormData>) {
   /**
@@ -132,11 +167,12 @@ export default function transformProps(chartProps: ChartProps<QueryFormData>) {
         temporalColname: string,
       ) => {
         let formatter: DateFormatter | undefined;
+        const isNumericTemporalColumn = isNumeric(temporalColname, data);
         if (dateFormat === SMART_DATE_ID) {
           if (granularity) {
             // time column use formats based on granularity
             formatter = getTimeFormatterForGranularity(granularity);
-          } else if (isNumeric(temporalColname, data)) {
+          } else if (isNumericTemporalColumn) {
             formatter = getTimeFormatter(DATABASE_DATETIME);
           } else {
             // if no column-specific format, print cell as is
@@ -146,7 +182,10 @@ export default function transformProps(chartProps: ChartProps<QueryFormData>) {
           formatter = getTimeFormatter(dateFormat);
         }
         if (formatter) {
-          acc[temporalColname] = formatter;
+          acc[temporalColname] = createSafeDateFormatter(
+            formatter,
+            isNumericTemporalColumn,
+          );
         }
         return acc;
       },

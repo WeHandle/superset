@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { ChartProps, QueryFormData } from '@superset-ui/core';
+import { ChartProps, QueryFormData, SMART_DATE_ID } from '@superset-ui/core';
 import { supersetTheme } from '@apache-superset/core/ui';
 import transformProps from '../../src/plugin/transformProps';
 import { MetricsLayoutEnum } from '../../src/types';
@@ -334,4 +334,63 @@ test('should map conditional formatting rules to metricColorFormatters with corr
   expect(
     result.metricColorFormatters[1].getColorFromValue(column2Formatting),
   ).toEqual('#5ac189FF');
+});
+
+test('should safely format numeric temporal values represented as strings', () => {
+  const smartDateFormData = {
+    ...formData,
+    dateFormat: SMART_DATE_ID,
+  };
+  const smartDateChartProps = new ChartProps<QueryFormData>({
+    formData: smartDateFormData,
+    width: 800,
+    height: 600,
+    queriesData: [
+      {
+        data: [{ __timestamp: 599616000000 }],
+        colnames: ['__timestamp'],
+        coltypes: [2],
+      },
+    ],
+    hooks: { setDataMask },
+    filterState: { selectedFilters: {} },
+    datasource: { verboseMap: {}, columnFormats: {} },
+    theme: supersetTheme,
+  });
+
+  const result = transformProps(smartDateChartProps);
+  const formatter = result.dateFormatters.__timestamp;
+
+  expect(formatter).toBeDefined();
+  expect(formatter?.('599616000000')).toBe(formatter?.(599616000000));
+  expect(formatter?.('599616000000')).not.toContain('NaN');
+});
+
+test('should fall back to the original value when temporal formatting is invalid', () => {
+  const smartDateFormData = {
+    ...formData,
+    dateFormat: SMART_DATE_ID,
+  };
+  const smartDateChartProps = new ChartProps<QueryFormData>({
+    formData: smartDateFormData,
+    width: 800,
+    height: 600,
+    queriesData: [
+      {
+        data: [{ __timestamp: 599616000000 }],
+        colnames: ['__timestamp'],
+        coltypes: [2],
+      },
+    ],
+    hooks: { setDataMask },
+    filterState: { selectedFilters: {} },
+    datasource: { verboseMap: {}, columnFormats: {} },
+    theme: supersetTheme,
+  });
+
+  const result = transformProps(smartDateChartProps);
+  const formatter = result.dateFormatters.__timestamp;
+
+  expect(formatter).toBeDefined();
+  expect(formatter?.('not-a-date')).toBe('not-a-date');
 });

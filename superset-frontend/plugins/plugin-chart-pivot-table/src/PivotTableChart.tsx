@@ -615,7 +615,7 @@ export default function PivotTableChart(props: PivotTableProps) {
           colKey.forEach((val, i) => {
             const col = cols[i];
             const formatter = dateFormatters[col];
-            const formattedVal = formatter?.(Number(val)) || String(val);
+            const formattedVal = formatter?.(val) ?? String(val);
             if (i > 0) {
               drillToDetailFilters.push({
                 col,
@@ -631,7 +631,7 @@ export default function PivotTableChart(props: PivotTableProps) {
           rowKey.forEach((val, i) => {
             const col = rows[i];
             const formatter = dateFormatters[col];
-            const formattedVal = formatter?.(Number(val)) || String(val);
+            const formattedVal = formatter?.(val) ?? String(val);
             drillToDetailFilters.push({
               col,
               op: '==',
